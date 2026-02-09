@@ -30,8 +30,11 @@ const ISSUE_TYPES = [
   "revert",
 ];
 
+// Number of fully scored issues required to complete a session
+const TARGET_ISSUE_COUNT = 15;
+
 interface ScoreEntry {
-  confidence: string;
+  ambiguity: string;
   scale: string;
   novelty: string;
   type: string;
@@ -60,7 +63,7 @@ const parseRepoUrl = (url: string) => {
 const isValidScore = (scoreEntry: ScoreEntry) => {
   const validValues = ["1", "2", "3", "4", "5"];
   return (
-    validValues.includes(scoreEntry.confidence) &&
+    validValues.includes(scoreEntry.ambiguity) &&
     validValues.includes(scoreEntry.scale) &&
     validValues.includes(scoreEntry.novelty)
   );
@@ -308,13 +311,13 @@ export default function App() {
   const [showFinishModal, setShowFinishModal] = useState(false);
 
   const [summaryError, setSummaryError] = useState<string | null>(null);
-  const [scores, setScores] = useState<Record<number, ScoreEntry>>({}); // Map of issueId -> { confidence, scale, novelty }
+  const [scores, setScores] = useState<Record<number, ScoreEntry>>({}); // Map of issueId -> { ambiguity, scale, novelty }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Current Rating State
   const [currentRating, setCurrentRating] = useState<ScoreEntry>({
-    confidence: "",
+    ambiguity: "",
     scale: "",
     novelty: "",
     type: "",
@@ -409,7 +412,7 @@ export default function App() {
     if (step === "triage" && issues[currentIndex]) {
       const processCurrentIssue = async () => {
         // 1. Reset UI
-        setCurrentRating({ confidence: "", scale: "", novelty: "", type: "" });
+        setCurrentRating({ ambiguity: "", scale: "", novelty: "", type: "" });
         setSummaryError(null);
         setCurrentSummary("");
 
@@ -460,7 +463,7 @@ export default function App() {
 
       if (comments.length > 0) {
         fullText += `Comments:\n`;
-        comments.slice(0, 10).forEach((c: any) => {
+        comments.forEach((c: any) => {
           // Take first 10 comments max
           fullText += `- User ${c.user.login}: ${c.body}\n`;
         });
@@ -497,8 +500,8 @@ export default function App() {
     // Calculate how many valid scored issues we have now
     const validCount = Object.values(newScores).filter(isValidScore).length;
 
-    // Check if we reached the target of 10 valid issues
-    if (validCount >= 10) {
+    // Check if we reached the target of fully scored issues
+    if (validCount >= TARGET_ISSUE_COUNT) {
       setStep("complete");
       return;
     }
@@ -518,7 +521,7 @@ export default function App() {
       "Title",
       "URL",
       "Type",
-      "Confidence",
+      "Ambiguity",
       "Scale",
       "Novelty",
       "Is Scored (Not X)",
@@ -528,7 +531,7 @@ export default function App() {
       `"${s.title?.replace(/"/g, '""')}"`, // Escape quotes
       s.url,
       s.type,
-      s.confidence,
+      s.ambiguity,
       s.scale,
       s.novelty,
       isValidScore(s) ? "Yes" : "No",
@@ -554,12 +557,12 @@ export default function App() {
   };
 
   const isRatingComplete =
-    currentRating.confidence &&
+    currentRating.ambiguity &&
     currentRating.scale &&
     currentRating.novelty &&
     currentRating.type;
   const currentValidCount = Object.values(scores).filter(isValidScore).length;
-  const progressPercentage = (currentValidCount / 10) * 100;
+  const progressPercentage = (currentValidCount / TARGET_ISSUE_COUNT) * 100;
 
   // --- RENDERERS ---
 
@@ -577,7 +580,7 @@ export default function App() {
             </h1>
             <p className="text-slate-500 text-sm mt-1">
               {" "}
-              Goal: 10 Scored Issues (Not 'X'){" "}
+              Goal: 15 Scored Issues (Not 'X'){" "}
             </p>
           </div>
         </div>
@@ -789,7 +792,7 @@ export default function App() {
                     Score
                   </h3>
                   <div className="text-xs font-semibold text-slate-300">
-                    Goal: {currentValidCount} / 10
+                    Goal: {currentValidCount} / {TARGET_ISSUE_COUNT}
                   </div>
                 </div>
 
@@ -809,10 +812,10 @@ export default function App() {
                     }
                   />
                   <RatingInput
-                    label="Confidence"
-                    value={currentRating.confidence}
+                    label="Ambiguity"
+                    value={currentRating.ambiguity}
                     onChange={(val) =>
-                      setCurrentRating((prev) => ({ ...prev, confidence: val }))
+                      setCurrentRating((prev) => ({ ...prev, ambiguity: val }))
                     }
                   />
                   <RatingInput
@@ -867,7 +870,7 @@ export default function App() {
                 <p className="font-semibold mb-1"> Scoring Goal: </p>
                 <p>
                   {" "}
-                  Track 10 issues where all values are scored (1-5). Selecting
+                  Track 15 issues where all values are scored (1-5). Selecting
                   'X' (N/A) will not count towards the goal.
                 </p>
               </div>
