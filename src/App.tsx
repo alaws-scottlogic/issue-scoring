@@ -14,7 +14,7 @@ import {
 
 // --- API & CONFIGURATION ---
 
-const GEMINI_MODEL = "gemini-2.0-flash";
+const GEMINI_MODEL = "gemini-3.5-flash";
 
 const ISSUE_TYPES = [
   "feat",
@@ -69,7 +69,7 @@ const isValidScore = (scoreEntry: ScoreEntry) => {
   );
 };
 
-// Safe fetch with exponential backoff for Gemini
+// Safe fetch with exponential backoff for Gemini via Google Generative Language API
 const fetchGeminiSummary = async (textToSummarize: string, key: string) => {
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`;
 
